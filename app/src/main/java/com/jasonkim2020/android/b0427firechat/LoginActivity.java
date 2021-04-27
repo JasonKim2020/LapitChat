@@ -77,6 +77,8 @@ public class LoginActivity extends AppCompatActivity {
                     mLoginProgress.dismiss();
                     
                     Intent mainIntent = new Intent(LoginActivity.this, MainActivity.class);
+                    //when user hit back button, it moves to
+                    mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(mainIntent);
                     finish();
                 }else{
