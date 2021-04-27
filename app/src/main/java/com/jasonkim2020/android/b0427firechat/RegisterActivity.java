@@ -1,8 +1,5 @@
 package com.jasonkim2020.android.b0427firechat;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,11 +8,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 public class RegisterActivity extends AppCompatActivity {
     private EditText mDisplayName;
@@ -23,6 +23,7 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText mPassword;
     private Button mCreateBtn;
 
+    private Toolbar mToolbar;
     //Firebase Auth
     private FirebaseAuth mAuth;
 
@@ -30,6 +31,12 @@ public class RegisterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
+        mToolbar = (Toolbar) findViewById(R.id.register_toolbar);
+        setSupportActionBar(mToolbar);
+        getSupportActionBar().setTitle("Create Account");
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
 
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
