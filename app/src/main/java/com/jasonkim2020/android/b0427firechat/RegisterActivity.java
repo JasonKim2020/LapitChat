@@ -28,7 +28,7 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText mDisplayName;
     private EditText mEmail;
     private EditText mPassword;
-    private Button mCreateBtn;
+    private Button mCreateBtn;    //Create a user button
 
     private Toolbar mToolbar;
 
@@ -45,6 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        //Toolbar setting
         mToolbar = (Toolbar) findViewById(R.id.register_toolbar);
         setSupportActionBar(mToolbar);
         getSupportActionBar().setTitle("Create Account");
@@ -60,6 +61,7 @@ public class RegisterActivity extends AppCompatActivity {
         mPassword = findViewById(R.id.reg_password);
         mCreateBtn = findViewById(R.id.reg_create_btn);
 
+        //Create User Button
         mCreateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -69,6 +71,7 @@ public class RegisterActivity extends AppCompatActivity {
 
 
                 if (!TextUtils.isEmpty(display_name) && !TextUtils.isEmpty(email) && !TextUtils.isEmpty(password)) {
+                    //Pop up Progress dialog
                     mRegProgress.setTitle("Registering User");
                     mRegProgress.setMessage("Please wait while we create your account !");
                     mRegProgress.setCanceledOnTouchOutside(false);
@@ -81,7 +84,9 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
+    //Register User
     private void register_user(String display_name, String email, String password) {
+        //Create user with FirebaseAuth object and email and password.
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
@@ -89,23 +94,35 @@ public class RegisterActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             //Sign in success, update UI with signed-in user's information
 
+                            //get user object from firebase
                             FirebaseUser current_user = FirebaseAuth.getInstance().getCurrentUser();
+                            //get user id
                             String uid = current_user.getUid();
 
+//                            https://www.youtube.com/watch?v=6AKdGvGE_BY&list=PLGCjwl1RrtcQ3o2jmZtwu2wXEA4OIIq53&index=9
+                            //set database reference into DatabaseReference object.
+                            // database structure: Root -> Users -> user id.
                             mDatabase= FirebaseDatabase.getInstance().getReference().child("Users").child(uid);
 
+                            //Create user hash map
                             HashMap<String, String> userMap = new HashMap<>();
                             userMap.put("name", display_name);
                             userMap.put("status", "Hi there I'm using Lapit Chat App.");
                             userMap.put("image","default");
                             userMap.put("thumb_image","default");
 
+                            //Save user data in DatabaseReference.
                             mDatabase.setValue(userMap).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
                                     if(task.isSuccessful()){
+                                        //Close Progress dialog
                                         mRegProgress.dismiss();
+
+                                        //Start Main Activity
                                         Intent mainIntent = new Intent(RegisterActivity.this, MainActivity.class);
+                                        //Remove prior activity history,
+                                        //whern user hit back button, it does not come back to Register activity.
                                         mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                         startActivity(mainIntent);
                                         finish();

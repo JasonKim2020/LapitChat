@@ -22,7 +22,7 @@
         tools:src="@drawable/default_avatar" />
 
     <TextView
-        android:id="@+id/settings_display_name"
+        android:id="@+id/settings_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -38,17 +38,17 @@
         app:layout_constraintTop_toBottomOf="@+id/settings_image" />
 
     <TextView
-        android:id="@+id/textView4"
+        android:id="@+id/settings_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="31dp"
         android:fontFamily="sans-serif-medium"
-        android:text="Hi there, I'm using Lapit Chat App"
+        android:text="@string/default_status"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/settings_display_name" />
+        app:layout_constraintTop_toBottomOf="@+id/settings_name" />
 
     <Button
         android:id="@+id/settins_image_btn"
@@ -65,7 +65,7 @@
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView4" />
+        app:layout_constraintTop_toBottomOf="@+id/settings_status" />
 
 
     <Button
@@ -77,7 +77,7 @@
         android:layout_marginTop="18dp"
         android:backgroundTint="#FF3D00"
         android:padding="20sp"
-        android:text="CHANGE STAUTS"
+        android:text="CHANGE STATUS"
         android:textColor="#ffffff"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"

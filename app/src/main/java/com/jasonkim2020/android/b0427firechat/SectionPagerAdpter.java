@@ -5,6 +5,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
 
+//SectionPagerAdpter for MainActivity.
+
 public class SectionPagerAdpter extends FragmentPagerAdapter {
 
     //    public SectionPagerAdpter(@NonNull FragmentManager fm) {

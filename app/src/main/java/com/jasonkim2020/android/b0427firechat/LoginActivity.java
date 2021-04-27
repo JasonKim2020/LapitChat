@@ -39,6 +39,8 @@ public class LoginActivity extends AppCompatActivity {
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
 
+
+        //Initialize toolbar
         mToolbar = (Toolbar) findViewById(R.id.login_toolbar);
         setSupportActionBar(mToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -50,6 +52,7 @@ public class LoginActivity extends AppCompatActivity {
         mLoginPassword = findViewById(R.id.login_password);
         mLogin_btn = findViewById(R.id.login_btn);
 
+        //User click login button
         mLogin_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -57,9 +60,12 @@ public class LoginActivity extends AppCompatActivity {
                 String password = mLoginPassword.getText().toString();
 
                 if(!TextUtils.isEmpty(email) || !TextUtils.isEmpty(password)){
+                    //Show up progress dialog
                     mLoginProgress.setTitle("Logging in" );;
                     mLoginProgress.setMessage("Please wait while we check your credentials.");
                     mLoginProgress.setCanceledOnTouchOutside(false);
+
+                    //Call login method
                     loginUser(email, password);
                 }
             }
@@ -70,6 +76,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loginUser(String email, String password) {
+
+        //login with FirebaseAuth object
         mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
@@ -77,7 +85,9 @@ public class LoginActivity extends AppCompatActivity {
                     mLoginProgress.dismiss();
                     
                     Intent mainIntent = new Intent(LoginActivity.this, MainActivity.class);
-                    //when user hit back button, it moves to
+
+                    //Remove prior activity history,
+                    //whern user hit back button, it does not come back to Login Activity.
                     mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(mainIntent);
                     finish();
