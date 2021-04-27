@@ -1,7 +1,9 @@
 package com.jasonkim2020.android.b0427firechat;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -24,6 +26,10 @@ public class RegisterActivity extends AppCompatActivity {
     private Button mCreateBtn;
 
     private Toolbar mToolbar;
+
+    //ProgressDialog
+    private ProgressDialog mRegProgress;
+
     //Firebase Auth
     private FirebaseAuth mAuth;
 
@@ -37,6 +43,7 @@ public class RegisterActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("Create Account");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        mRegProgress = new ProgressDialog(this);
 
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
@@ -53,7 +60,15 @@ public class RegisterActivity extends AppCompatActivity {
                 String email = mEmail.getText().toString();
                 String password = mPassword.getText().toString();
 
-                register_user(display_name, email, password);
+                if(TextUtils.isEmpty(display_name) || TextUtils.isEmpty(email) || TextUtils.isEmpty(password)){
+                    mRegProgress.setTitle("Registering User");
+                    mRegProgress.setMessage("Please wait while we create your account !");
+                    mRegProgress.setCanceledOnTouchOutside(false);
+                    mRegProgress.show();
+
+                    register_user(display_name, email, password);
+                }
+
             }
         });
     }
@@ -65,13 +80,17 @@ public class RegisterActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             //Sign in success, update UI with signed-in user's information
+
+                            mRegProgress.dismiss();
+
                             Intent mainIntent = new Intent(RegisterActivity.this, MainActivity.class);
                             startActivity(mainIntent);
                             finish();
                         } else {
                             //If sign in fails, display a message to the user.
+                            mRegProgress.hide();
                             Log.w("createUser", "createUserWithEmail:failure", task.getException());
-                            Toast.makeText(RegisterActivity.this, "Authentication failed " + task.getException(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(RegisterActivity.this, "Authentication failed" + task.getException(), Toast.LENGTH_SHORT).show();
 
                         }
                     }
