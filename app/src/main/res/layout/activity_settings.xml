@@ -51,7 +51,7 @@
         app:layout_constraintTop_toBottomOf="@+id/settings_name" />
 
     <Button
-        android:id="@+id/settins_image_btn"
+        android:id="@+id/settings_image_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -69,7 +69,7 @@
 
 
     <Button
-        android:id="@+id/settins_status_btn"
+        android:id="@+id/settings_status_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -82,6 +82,6 @@
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/settins_image_btn" />
+        app:layout_constraintTop_toBottomOf="@+id/settings_image_btn" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -29,6 +29,9 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView mName;
     private TextView mStatus;
     private Button mStatusBtn;
+    private Button mImageBtn;
+
+    private static final int GALLERY_PICK = 1;
 
 
     @Override
@@ -39,7 +42,8 @@ public class SettingsActivity extends AppCompatActivity {
         mDisplayImage = (CircleImageView) findViewById(R.id.settings_image);
         mName = (TextView) findViewById(R.id.settings_name);
         mStatus = (TextView) findViewById(R.id.settings_status);
-        mStatusBtn = findViewById(R.id.settins_status_btn);
+        mStatusBtn = findViewById(R.id.settings_status_btn);
+        mImageBtn = findViewById(R.id.settings_image_btn);
 
 
         //Get current user instance and user id.
@@ -79,6 +83,18 @@ public class SettingsActivity extends AppCompatActivity {
                 Intent status_intent = new Intent(SettingsActivity.this, StatusActivity.class);
                 status_intent.putExtra("status_value", status_value);
                 startActivity(status_intent);
+            }
+        });
+
+        mImageBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent galleryIntent = new Intent();
+                galleryIntent.setType("image/*");
+                galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
+                startActivityForResult(Intent.createChooser(galleryIntent, "SELECT IMAGE"), GALLERY_PICK);
+
+                //https://github.com/ArthurHub/Android-Image-Cropper
             }
         });
     }
