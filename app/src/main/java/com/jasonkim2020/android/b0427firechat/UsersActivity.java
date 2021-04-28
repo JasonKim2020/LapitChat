@@ -20,12 +20,15 @@ import com.squareup.picasso.Picasso;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
+// Show list that having all user
 public class UsersActivity extends AppCompatActivity {
 
     private Toolbar mToolbar;
 
+    //list shows all user
     private RecyclerView mUsersList;
 
+    //refer root > users folder in realtime database
     private DatabaseReference mUsersDatabase;
 
     private FirebaseRecyclerOptions<Users> options;
@@ -41,9 +44,11 @@ public class UsersActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("All Users");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        //refer root > users folder in realtime database
         mUsersDatabase = FirebaseDatabase.getInstance().getReference().child("Users");
 
-        mUsersList = findViewById(R.id.users_list);
+        //Set RecyclerView
+        mUsersList = (RecyclerView) findViewById(R.id.users_list);
         mUsersList.setHasFixedSize(true);
         mUsersList.setLayoutManager(new LinearLayoutManager(this));
 
@@ -62,13 +67,12 @@ public class UsersActivity extends AppCompatActivity {
                 usersViewHolder.setDisplayName(users.getName());
                 usersViewHolder.setUserStatus(users.getStatus());
                 usersViewHolder.setDisplayImage(users.getImage());
-//                Picasso.with(UsersActivity.this).load(model.getImage()).into(holder.mImageview);
             }
 
             @NonNull
             @Override
             public UsersViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View v =LayoutInflater.from(parent.getContext()).inflate(R.layout.users_single_layout, parent,false);
+                View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.users_single_layout, parent, false);
                 return new UsersViewHolder(v);
             }
         };
@@ -77,12 +81,13 @@ public class UsersActivity extends AppCompatActivity {
         mUsersList.setAdapter(adapter);
     }
 
-    public static class UsersViewHolder extends RecyclerView.ViewHolder{
+    public static class UsersViewHolder extends RecyclerView.ViewHolder {
 
         View mView;
 
         TextView mName, mStatus;
         CircleImageView mImageview;
+
         public UsersViewHolder(@NonNull View itemView) {
             super(itemView);
 
@@ -91,15 +96,19 @@ public class UsersActivity extends AppCompatActivity {
             mStatus = itemView.findViewById(R.id.user_single_status);
             mImageview = itemView.findViewById(R.id.user_single_image);
         }
-        public void setDisplayName(String name){
+
+        public void setDisplayName(String name) {
             TextView userNameView = (TextView) mView.findViewById(R.id.user_single_name);
             userNameView.setText(name);
         }
-        public void setUserStatus(String status){
+
+        public void setUserStatus(String status) {
             TextView userStatusView = (TextView) mView.findViewById(R.id.user_single_status);
             userStatusView.setText(status);
         }
-        public void setDisplayImage(String url){
+
+        public void setDisplayImage(String url) {
+            //Picasso is a easy component to show image with url in a imageview
             Picasso.with(mView.getContext()).load(url).into(mImageview);
         }
     }

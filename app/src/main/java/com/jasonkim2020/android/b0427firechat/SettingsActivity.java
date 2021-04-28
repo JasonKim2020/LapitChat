@@ -125,9 +125,11 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
+        //On change image button click
         mImageBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //open activity to get image
                 Intent galleryIntent = new Intent();
                 galleryIntent.setType("image/*");
                 galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
@@ -146,36 +148,47 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
+
+    //after choosing an image
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        //if it is after chooing an image and the result is ok
         if (requestCode == GALLERY_PICK && resultCode == RESULT_OK) {
 
             Uri imageUri = data.getData();
             // start cropping activity for pre-acquired image saved on the device
             CropImage.activity(imageUri)
-                    .setAspectRatio(1, 1)
+                    .setAspectRatio(1, 1)          //set crop image ratio
                     .start(this);
         }
 
+        //if it is after cropping image
         if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             if (resultCode == RESULT_OK) {
 
+                //Show Progress dialog
                 mProgressDialog = new ProgressDialog(SettingsActivity.this);
                 mProgressDialog.setTitle("Uploading Image...");
                 mProgressDialog.setMessage("Please wait while we upload and process the image.");
                 mProgressDialog.setCanceledOnTouchOutside(false);
                 mProgressDialog.show();
 
+                //Cropped image uri
                 Uri resultUri = result.getUri();
 
+                //Get thumb_image file path from cropped image file path(resultUri)
                 File thumb_filePath = new File(resultUri.getPath());
 
+                //Get user id
                 String current_user_id = mCurrentUser.getUid();
+
+                //To compress big size
                 Bitmap thumb_bitmap;
 
                 try {
+                    //Compress thumb_image with specific condition
                     thumb_bitmap = new Compressor(this)
                             .setMaxWidth(200)
                             .setMaxHeight(200)
@@ -183,28 +196,37 @@ public class SettingsActivity extends AppCompatActivity {
                             .compressToBitmap(thumb_filePath);
 
 
+                    //Convert bitmap image into JPEG type
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     thumb_bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
                     byte[] thumb_byte = baos.toByteArray();
 
-
+                    //Original image filepath: root > profile_images > userid.jpg
                     StorageReference filepath = mImageStorage.child("profile_images").child(current_user_id + ".jpg");
+                    //thumb image filepath:  root > profile_images > thumbs > userid.jpg
                     StorageReference thumb_filepath = mImageStorage.child("profile_images").child("thumbs").child(current_user_id + ".jpg");
+
+                    //1. save cropped image in profile_images folder
+                    //2. get the cropped image  download url
+                    //3. save thumbnail in profile_images > thumbs
+                    //4. get thumbnail image download url
+                    //5. save both download url in root > Users > user id
 
                     //save cropped image(big size) into profile_images folder
                     filepath.putFile(resultUri)
                             .addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
                                 @Override
                                 public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-                                    //When saving big image is completed
+                                    //When saving cropped image is completed
                                     if (task.isSuccessful()) {
-                                        //get big image download url.
+                                        //get cropped image download url.
                                         filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                                             @Override
                                             public void onSuccess(Uri uri) {
                                                 String download_url = uri.toString();
 
-                                                //save thumnail
+                                                //save thumnail into profile_images > thumbs
+                                                //thumb_byte was compressed and converted into jpg
                                                 UploadTask uploadTask = thumb_filepath.putBytes(thumb_byte);
                                                 uploadTask.addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
                                                     @Override
@@ -212,12 +234,14 @@ public class SettingsActivity extends AppCompatActivity {
                                                         //get thumbnail download url.
                                                         thumb_filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                                                             @Override
+                                                            //when getting thumbnail download url is success.
                                                             public void onSuccess(Uri uri) {
                                                                 String thumb_download_url = uri.toString();
 
                                                                 if (thumb_task.isSuccessful()) {
 
-                                                                    Map  update_hashMap = new HashMap();
+                                                                    //put cropped image url and thumbnail image url
+                                                                    Map update_hashMap = new HashMap();
                                                                     update_hashMap.put("image", download_url);
                                                                     update_hashMap.put("thumb_image", thumb_download_url);
 
@@ -257,6 +281,8 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
+
+    //make random string with random length
     public static String random() {
         Random generator = new Random();
         StringBuilder randomStringBuilder = new StringBuilder();
