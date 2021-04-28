@@ -1,5 +1,6 @@
 package com.jasonkim2020.android.b0427firechat;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -24,6 +26,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 import com.theartofdev.edmodo.cropper.CropImage;
 
 import java.util.Random;
@@ -46,6 +49,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     //Storage Firebase
     private StorageReference mImageStorage;
+
+    private ProgressDialog mProgressDialog;
 
 
     @Override
@@ -81,6 +86,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                 mName.setText(name);
                 mStatus.setText(status);
+                Picasso.with(SettingsActivity.this).load(image).into(mDisplayImage);
 
             }
 
@@ -139,20 +145,44 @@ public class SettingsActivity extends AppCompatActivity {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             if (resultCode == RESULT_OK) {
 
+                mProgressDialog = new ProgressDialog(SettingsActivity.this);
+                mProgressDialog.setTitle("Uploading Image...");
+                mProgressDialog.setMessage("Please wait while we upload and process the image.");
+                mProgressDialog.setCanceledOnTouchOutside(false);
+                mProgressDialog.show();
+
                 Uri resultUri = result.getUri();
+                String current_user_id = mCurrentUser.getUid();
 
-                StorageReference filepath = mImageStorage.child("profile_images").child(random() + ".jpg");
-                filepath.putFile(resultUri).addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(SettingsActivity.this, "Working", Toast.LENGTH_SHORT).show();
-                        } else {
+                StorageReference filepath = mImageStorage.child("profile_images").child(current_user_id + ".jpg");
+                filepath.putFile(resultUri)
+                        .addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
+                            @Override
+                            public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                                if (task.isSuccessful()) {
+//
+                                    filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                        @Override
+                                        public void onSuccess(Uri uri) {
+                                            String download_url = uri.toString();
 
-                            Toast.makeText(SettingsActivity.this, "Error in uploading", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
+                                            mUserDatabase.child("image").setValue(download_url).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                @Override
+                                                public void onComplete(@NonNull Task<Void> task) {
+                                                    if (task.isSuccessful()) {
+                                                        mProgressDialog.dismiss();
+                                                        Toast.makeText(SettingsActivity.this, "Success Uploading.", Toast.LENGTH_SHORT).show();
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    Toast.makeText(SettingsActivity.this, "Error in uploading", Toast.LENGTH_SHORT).show();
+                                    mProgressDialog.dismiss();
+                                }
+                            }
+                        });
 
 
             } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
