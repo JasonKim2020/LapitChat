@@ -1,8 +1,10 @@
 package com.jasonkim2020.android.b0427firechat;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,8 +13,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.squareup.picasso.Picasso;
+
+import de.hdodenhof.circleimageview.CircleImageView;
 
 public class UsersActivity extends AppCompatActivity {
 
@@ -21,6 +27,9 @@ public class UsersActivity extends AppCompatActivity {
     private RecyclerView mUsersList;
 
     private DatabaseReference mUsersDatabase;
+
+    private FirebaseRecyclerOptions<Users> options;
+    private FirebaseRecyclerAdapter<Users, UsersViewHolder> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,36 +54,53 @@ public class UsersActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-
-        FirebaseRecyclerAdapter<Users, UsersViewHolder> firebaseRecyclerAdapter= new FirebaseRecyclerAdapter<Users, UsersViewHolder>(
-                Users.class,
-                R.layout.users_single_layout,
-                UsersViewHolder.class,
-                mUsersDatabase
-        ) {
-
+        options = new FirebaseRecyclerOptions.Builder<Users>().setQuery(mUsersDatabase, Users.class).build();
+        adapter = new FirebaseRecyclerAdapter<Users, UsersViewHolder>(options) {
             @Override
-            protected void onBindViewHolder(@NonNull UsersViewHolder holder, int position, @NonNull Users model) {
+            protected void onBindViewHolder(@NonNull UsersViewHolder usersViewHolder, int position, @NonNull Users users) {
 
+                usersViewHolder.setDisplayName(users.getName());
+                usersViewHolder.setUserStatus(users.getStatus());
+                usersViewHolder.setDisplayImage(users.getImage());
+//                Picasso.with(UsersActivity.this).load(model.getImage()).into(holder.mImageview);
             }
 
             @NonNull
             @Override
             public UsersViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                return null;
+                View v =LayoutInflater.from(parent.getContext()).inflate(R.layout.users_single_layout, parent,false);
+                return new UsersViewHolder(v);
             }
         };
+
+        adapter.startListening();
+        mUsersList.setAdapter(adapter);
     }
 
-    public class UsersViewHolder extends RecyclerView.ViewHolder{
+    public static class UsersViewHolder extends RecyclerView.ViewHolder{
 
         View mView;
 
+        TextView mName, mStatus;
+        CircleImageView mImageview;
         public UsersViewHolder(@NonNull View itemView) {
             super(itemView);
 
             mView = itemView;
+            mName = itemView.findViewById(R.id.user_single_name);
+            mStatus = itemView.findViewById(R.id.user_single_status);
+            mImageview = itemView.findViewById(R.id.user_single_image);
         }
-
+        public void setDisplayName(String name){
+            TextView userNameView = (TextView) mView.findViewById(R.id.user_single_name);
+            userNameView.setText(name);
+        }
+        public void setUserStatus(String status){
+            TextView userStatusView = (TextView) mView.findViewById(R.id.user_single_status);
+            userStatusView.setText(status);
+        }
+        public void setDisplayImage(String url){
+            Picasso.with(mView.getContext()).load(url).into(mImageview);
+        }
     }
 }

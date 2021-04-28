@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content">
 
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/user_single_image"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="82dp"
+        android:layout_height="82dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="331dp"
@@ -25,7 +24,7 @@
         android:layout_marginStart="24dp"
         android:text="Display Name"
         android:textColor="@color/black"
-        android:textSize="16sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintStart_toEndOf="@+id/user_single_image"
         app:layout_constraintTop_toTopOf="@+id/user_single_image" />
@@ -38,7 +37,6 @@
         android:text="User default Status"
         android:textColor="@color/black"
         android:textSize="16sp"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/user_single_name"
         app:layout_constraintTop_toBottomOf="@+id/user_single_name" />
 

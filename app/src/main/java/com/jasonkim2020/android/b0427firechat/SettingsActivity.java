@@ -2,6 +2,7 @@ package com.jasonkim2020.android.b0427firechat;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -29,9 +30,15 @@ import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 import com.theartofdev.edmodo.cropper.CropImage;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import id.zelory.compressor.Compressor;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -62,9 +69,11 @@ public class SettingsActivity extends AppCompatActivity {
         mName = (TextView) findViewById(R.id.settings_name);
         mStatus = (TextView) findViewById(R.id.settings_status);
 
+        //Buttons to change status and image
         mStatusBtn = findViewById(R.id.settings_status_btn);
         mImageBtn = findViewById(R.id.settings_image_btn);
 
+        //Get storage reference
         mImageStorage = FirebaseStorage.getInstance().getReference();
 
         //Get current user instance and user id.
@@ -86,8 +95,13 @@ public class SettingsActivity extends AppCompatActivity {
 
                 mName.setText(name);
                 mStatus.setText(status);
-                Picasso.with(SettingsActivity.this).load(image).into(mDisplayImage);
 
+                //because there can be a person that have not uploaded any image yet.
+                //then image url has "default"
+                //when it is not, the imageview shows the pointed image.
+                if (!image.equals("default")) {
+                    Picasso.with(SettingsActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mDisplayImage);
+                }
             }
 
             @Override
@@ -96,10 +110,13 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
+        //user clicks status btn to change his status.
         mStatusBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
+                //for rapid starting StatusActivity
+                //deliver current status with it.
                 String status_value = mStatus.getText().toString();
 
                 Intent status_intent = new Intent(SettingsActivity.this, StatusActivity.class);
@@ -152,37 +169,86 @@ public class SettingsActivity extends AppCompatActivity {
                 mProgressDialog.show();
 
                 Uri resultUri = result.getUri();
+
+                File thumb_filePath = new File(resultUri.getPath());
+
                 String current_user_id = mCurrentUser.getUid();
+                Bitmap thumb_bitmap;
 
-                StorageReference filepath = mImageStorage.child("profile_images").child(current_user_id + ".jpg");
-                filepath.putFile(resultUri)
-                        .addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
-                            @Override
-                            public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
-                                if (task.isSuccessful()) {
-//
-                                    filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-                                        @Override
-                                        public void onSuccess(Uri uri) {
-                                            String download_url = uri.toString();
+                try {
+                    thumb_bitmap = new Compressor(this)
+                            .setMaxWidth(200)
+                            .setMaxHeight(200)
+                            .setQuality(75)
+                            .compressToBitmap(thumb_filePath);
 
-                                            mUserDatabase.child("image").setValue(download_url).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                                @Override
-                                                public void onComplete(@NonNull Task<Void> task) {
-                                                    if (task.isSuccessful()) {
-                                                        mProgressDialog.dismiss();
-                                                        Toast.makeText(SettingsActivity.this, "Success Uploading.", Toast.LENGTH_SHORT).show();
+
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    thumb_bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                    byte[] thumb_byte = baos.toByteArray();
+
+
+                    StorageReference filepath = mImageStorage.child("profile_images").child(current_user_id + ".jpg");
+                    StorageReference thumb_filepath = mImageStorage.child("profile_images").child("thumbs").child(current_user_id + ".jpg");
+
+                    //save cropped image(big size) into profile_images folder
+                    filepath.putFile(resultUri)
+                            .addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
+                                @Override
+                                public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                                    //When saving big image is completed
+                                    if (task.isSuccessful()) {
+                                        //get big image download url.
+                                        filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                            @Override
+                                            public void onSuccess(Uri uri) {
+                                                String download_url = uri.toString();
+
+                                                //save thumnail
+                                                UploadTask uploadTask = thumb_filepath.putBytes(thumb_byte);
+                                                uploadTask.addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
+                                                    @Override
+                                                    public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> thumb_task) {
+                                                        //get thumbnail download url.
+                                                        thumb_filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                                            @Override
+                                                            public void onSuccess(Uri uri) {
+                                                                String thumb_download_url = uri.toString();
+
+                                                                if (thumb_task.isSuccessful()) {
+
+                                                                    Map  update_hashMap = new HashMap();
+                                                                    update_hashMap.put("image", download_url);
+                                                                    update_hashMap.put("thumb_image", thumb_download_url);
+
+                                                                    mUserDatabase.updateChildren(update_hashMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                                        @Override
+                                                                        public void onComplete(@NonNull Task<Void> task) {
+                                                                            if (task.isSuccessful()) {
+                                                                                mProgressDialog.dismiss();
+                                                                                Toast.makeText(SettingsActivity.this, "Success Uploading.", Toast.LENGTH_SHORT).show();
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                } else {
+                                                                    Toast.makeText(SettingsActivity.this, "Error in uploading thumbnail", Toast.LENGTH_SHORT).show();
+                                                                    mProgressDialog.dismiss();
+                                                                }
+                                                            }
+                                                        });
                                                     }
-                                                }
-                                            });
-                                        }
-                                    });
-                                } else {
-                                    Toast.makeText(SettingsActivity.this, "Error in uploading", Toast.LENGTH_SHORT).show();
-                                    mProgressDialog.dismiss();
+                                                });
+                                            }
+                                        });
+                                    } else {
+                                        Toast.makeText(SettingsActivity.this, "Error in uploading", Toast.LENGTH_SHORT).show();
+                                        mProgressDialog.dismiss();
+                                    }
                                 }
-                            }
-                        });
+                            });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
 
             } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
