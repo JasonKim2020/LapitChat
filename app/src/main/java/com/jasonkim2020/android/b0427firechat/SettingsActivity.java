@@ -27,6 +27,8 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 import com.theartofdev.edmodo.cropper.CropImage;
 
@@ -84,6 +86,9 @@ public class SettingsActivity extends AppCompatActivity {
         //Get DatabaseReference for user
         //Structure root > Users > user id.
         mUserDatabase = FirebaseDatabase.getInstance().getReference().child("Users").child(current_uid);
+
+        //This line makes app is able to run offline.
+        //text data from firebase is stored in mobile device
         mUserDatabase.keepSynced(true);
 
         //Get user information such as name, image, status, thumb_image.
@@ -102,7 +107,23 @@ public class SettingsActivity extends AppCompatActivity {
                 //then image url has "default"
                 //when it is not, the imageview shows the pointed image.
                 if (!image.equals("default")) {
-                    Picasso.with(SettingsActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mDisplayImage);
+
+                    //Retrieve image data from the local device
+                    // by "networkPolicy(NetworkPolicy.OFFLINE)"
+                    Picasso.with(SettingsActivity.this).load(image)
+                            .networkPolicy(NetworkPolicy.OFFLINE)
+                            .placeholder(R.drawable.default_avatar).into(mDisplayImage, new Callback() {
+                        @Override
+                        public void onSuccess() {
+
+                        }
+
+                        //Retrieve image data from the internet
+                        @Override
+                        public void onError() {
+                            Picasso.with(SettingsActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mDisplayImage);
+                        }
+                    });
                 }
             }
 

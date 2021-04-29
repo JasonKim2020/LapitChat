@@ -21,6 +21,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
@@ -33,16 +35,21 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView mProfileName, mProfileStatus, mProfileFriendsCount;
     private Button mProfileSendReqBtn;
 
-
+    //database referring users
     private DatabaseReference mUsersDatabase;
 
     private ProgressDialog mProgressDialog;
 
+    //database referring Friend Request
     private DatabaseReference mFriendReqDatabase;
+
+    //database referring Friend
     private DatabaseReference mFriendDatabase;
 
+    //Authentication referring current user
     private FirebaseUser mCurrent_user;
 
+    //Friend State
     private String mCurrent_state;
 
     @Override
@@ -50,11 +57,20 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
+        //user that I look at
         String user_id = getIntent().getStringExtra("user_id");
 
         mUsersDatabase = FirebaseDatabase.getInstance().getReference().child("Users").child(user_id);
         mFriendReqDatabase = FirebaseDatabase.getInstance().getReference().child("Friend_req");
         mFriendDatabase = FirebaseDatabase.getInstance().getReference().child("Friends");
+
+        //This line makes app is able to run offline.
+        //text data from firebase is stored in mobile device
+        mUsersDatabase.keepSynced(true);
+        mFriendReqDatabase.keepSynced(true);
+        mFriendDatabase.keepSynced(true);
+
+        //current user key
         mCurrent_user = FirebaseAuth.getInstance().getCurrentUser();
 
         mProfileImage = (ImageView) findViewById(R.id.profile_image);
@@ -72,6 +88,7 @@ public class ProfileActivity extends AppCompatActivity {
         mProgressDialog.show();
 
 
+        //Retrieving user information
         mUsersDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -82,12 +99,30 @@ public class ProfileActivity extends AppCompatActivity {
                 mProfileName.setText(display_name);
                 mProfileStatus.setText(status);
 
-                Picasso.with(ProfileActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mProfileImage);
+                //Retrieve image data from the local device
+                // by "networkPolicy(NetworkPolicy.OFFLINE)"
+                Picasso.with(ProfileActivity.this).load(image)
+                        .networkPolicy(NetworkPolicy.OFFLINE)
+                        .placeholder(R.drawable.default_avatar).into(mProfileImage, new Callback() {
+                    @Override
+                    public void onSuccess() {
+
+                    }
+
+                    //Retrieve image data from the internet
+                    @Override
+                    public void onError() {
+                        Picasso.with(ProfileActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mProfileImage);
+                    }
+                });
+
 
                 //----------- FRIENDS LIST / REQUEST FEATURE --------
+
                 mFriendReqDatabase.child(mCurrent_user.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot1) {
+                        //if this guy is in friend request list
                         if (dataSnapshot1.hasChild(user_id)) {
                             String req_type = dataSnapshot1.child(user_id).child("request_type").getValue().toString();
                             if (req_type.equals("received")) {
@@ -103,6 +138,7 @@ public class ProfileActivity extends AppCompatActivity {
                         }else{
 
                             mFriendDatabase.child(mCurrent_user.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                                //if this guy is in friend list
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                                     if(snapshot.hasChild(user_id)){
@@ -143,7 +179,7 @@ public class ProfileActivity extends AppCompatActivity {
                 mProfileSendReqBtn.setEnabled(false);
 
                 //- ----------------- NOT FRIENDS STATE --------------------
-
+                //set request type as sent in my friend request list
                 if (mCurrent_state.equals("not_friends")) {
                     mFriendReqDatabase.child(mCurrent_user.getUid()).child(user_id).child("request_type")
                             .setValue("sent")
@@ -152,12 +188,12 @@ public class ProfileActivity extends AppCompatActivity {
                                 public void onComplete(@NonNull Task<Void> task) {
 
                                     if (task.isSuccessful()) {
+                                        //set request type as received in this guy friend request list
                                         mFriendReqDatabase.child(user_id).child(mCurrent_user.getUid()).child("request_type")
                                                 .setValue("received")
                                                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                                                     @Override
                                                     public void onSuccess(Void aVoid) {
-
                                                         mCurrent_state = "req_sent";
                                                         mProfileSendReqBtn.setText("Cancel Friend Request");
 
