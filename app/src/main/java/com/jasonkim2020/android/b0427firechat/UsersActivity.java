@@ -1,5 +1,7 @@
 package com.jasonkim2020.android.b0427firechat;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -66,7 +68,18 @@ public class UsersActivity extends AppCompatActivity {
 
                 usersViewHolder.setDisplayName(users.getName());
                 usersViewHolder.setUserStatus(users.getStatus());
-                usersViewHolder.setDisplayImage(users.getImage());
+                usersViewHolder.setUserImage(users.getThumb_image(), getApplicationContext());
+
+                String user_id = getRef(position).getKey();
+
+                usersViewHolder.mView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent profileIntent = new Intent(UsersActivity.this, ProfileActivity.class);
+                        profileIntent.putExtra("user_id", user_id);
+                        startActivity(profileIntent);
+                    }
+                });
             }
 
             @NonNull
@@ -85,16 +98,10 @@ public class UsersActivity extends AppCompatActivity {
 
         View mView;
 
-        TextView mName, mStatus;
-        CircleImageView mImageview;
-
         public UsersViewHolder(@NonNull View itemView) {
             super(itemView);
 
             mView = itemView;
-            mName = itemView.findViewById(R.id.user_single_name);
-            mStatus = itemView.findViewById(R.id.user_single_status);
-            mImageview = itemView.findViewById(R.id.user_single_image);
         }
 
         public void setDisplayName(String name) {
@@ -107,9 +114,13 @@ public class UsersActivity extends AppCompatActivity {
             userStatusView.setText(status);
         }
 
-        public void setDisplayImage(String url) {
+        public void setUserImage(String thumb_image, Context ctx) {
+            CircleImageView userImageView = (CircleImageView) mView.findViewById(R.id.user_single_image);
             //Picasso is a easy component to show image with url in a imageview
-            Picasso.with(mView.getContext()).load(url).into(mImageview);
+            Picasso.with(ctx)
+                    .load(thumb_image)
+                    .placeholder(R.drawable.default_avatar)
+                    .into(userImageView);
         }
     }
 }

@@ -80,9 +80,11 @@ public class SettingsActivity extends AppCompatActivity {
         mCurrentUser = FirebaseAuth.getInstance().getCurrentUser();
         String current_uid = mCurrentUser.getUid();
 
+
         //Get DatabaseReference for user
         //Structure root > Users > user id.
         mUserDatabase = FirebaseDatabase.getInstance().getReference().child("Users").child(current_uid);
+        mUserDatabase.keepSynced(true);
 
         //Get user information such as name, image, status, thumb_image.
         mUserDatabase.addValueEventListener(new ValueEventListener() {
