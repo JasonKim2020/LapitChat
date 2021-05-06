@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -31,6 +32,7 @@ import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,6 +44,8 @@ import java.util.Random;
 import de.hdodenhof.circleimageview.CircleImageView;
 import id.zelory.compressor.Compressor;
 
+
+//Change User information (User image and status)
 public class SettingsActivity extends AppCompatActivity {
 
     private DatabaseReference mUserDatabase;
@@ -95,35 +99,42 @@ public class SettingsActivity extends AppCompatActivity {
         mUserDatabase.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String name = dataSnapshot.child("name").getValue().toString();
-                String image = dataSnapshot.child("image").getValue().toString();
-                String status = dataSnapshot.child("status").getValue().toString();
-                String thumb_image = dataSnapshot.child("thumb_image").getValue().toString();
+                try {
+                    String name = dataSnapshot.child("name").getValue().toString();
+                    //image contains the url showing image.
+                    String image = dataSnapshot.child("image").getValue().toString();
+                    String status = dataSnapshot.child("status").getValue().toString();
+                    String thumb_image = dataSnapshot.child("thumb_image").getValue().toString();
 
-                mName.setText(name);
-                mStatus.setText(status);
+                    mName.setText(name);
+                    mStatus.setText(status);
 
-                //because there can be a person that have not uploaded any image yet.
-                //then image url has "default"
-                //when it is not, the imageview shows the pointed image.
-                if (!image.equals("default")) {
 
-                    //Retrieve image data from the local device
-                    // by "networkPolicy(NetworkPolicy.OFFLINE)"
-                    Picasso.with(SettingsActivity.this).load(image)
-                            .networkPolicy(NetworkPolicy.OFFLINE)
-                            .placeholder(R.drawable.default_avatar).into(mDisplayImage, new Callback() {
-                        @Override
-                        public void onSuccess() {
+                    //because there can be a user that have not uploaded any image yet.
+                    //then image url has "default"
+                    //when it is not, the imageview shows the pointed image.
+                    if (!image.equals("default")) {
 
-                        }
+                        //Retrieve image data from the local device
+                        // by "networkPolicy(NetworkPolicy.OFFLINE)"
+                        Picasso.with(SettingsActivity.this).load(image)
+                                .networkPolicy(NetworkPolicy.OFFLINE)
+                                .placeholder(R.drawable.default_avatar).into(mDisplayImage, new Callback() {
+                            @Override
+                            public void onSuccess() {
 
-                        //Retrieve image data from the internet
-                        @Override
-                        public void onError() {
-                            Picasso.with(SettingsActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mDisplayImage);
-                        }
-                    });
+                            }
+
+                            //Retrieve image data from the internet
+                            @Override
+                            public void onError() {
+                                Picasso.with(SettingsActivity.this).load(image).placeholder(R.drawable.default_avatar).into(mDisplayImage);
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(SettingsActivity.this, e.getMessage().toString(), Toast.LENGTH_SHORT).show();
+                    Log.d("SettingsActivity",e.getMessage().toString());
                 }
             }
 
@@ -139,7 +150,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 //for rapid starting StatusActivity
-                //deliver current status with it.
+                //deliver current status with intent.
                 String status_value = mStatus.getText().toString();
 
                 Intent status_intent = new Intent(SettingsActivity.this, StatusActivity.class);
@@ -153,17 +164,17 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //open activity to get image
-                Intent galleryIntent = new Intent();
-                galleryIntent.setType("image/*");
-                galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(Intent.createChooser(galleryIntent, "SELECT IMAGE"), GALLERY_PICK);
+//                Intent galleryIntent = new Intent();
+//                galleryIntent.setType("image/*");
+//                galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
+//                startActivityForResult(Intent.createChooser(galleryIntent, "SELECT IMAGE"), GALLERY_PICK);
 
                 //https://github.com/ArthurHub/Android-Image-Cropper
 
                 // start picker to get image for cropping and then use the image in cropping activity
-//                CropImage.activity()
-//                        .setGuidelines(CropImageView.Guidelines.ON)
-//                        .start(SettingsActivity.this);
+                CropImage.activity()
+                        .setGuidelines(CropImageView.Guidelines.ON)
+                        .start(SettingsActivity.this);
 //
 //                Pick image for cropping from Camera
 //                https://github.com/ArthurHub/Android-Image-Cropper/wiki/Pick-image-for-cropping-from-Camera-or-Gallery
@@ -235,26 +246,26 @@ public class SettingsActivity extends AppCompatActivity {
                     //4. get thumbnail image download url
                     //5. save both download url in root > Users > user id
 
-                    //save cropped image(big size) into profile_images folder
+                    //--- 1. save cropped image(big size) into profile_images folder
                     filepath.putFile(resultUri)
                             .addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
                                 @Override
                                 public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
                                     //When saving cropped image is completed
                                     if (task.isSuccessful()) {
-                                        //get cropped image download url.
+                                        //---   2. get cropped image download url.
                                         filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                                             @Override
                                             public void onSuccess(Uri uri) {
                                                 String download_url = uri.toString();
 
-                                                //save thumnail into profile_images > thumbs
+                                                //--- 3. save thumnail into profile_images > thumbs
                                                 //thumb_byte was compressed and converted into jpg
                                                 UploadTask uploadTask = thumb_filepath.putBytes(thumb_byte);
                                                 uploadTask.addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
                                                     @Override
                                                     public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> thumb_task) {
-                                                        //get thumbnail download url.
+                                                        //--- 4. get thumbnail download url.
                                                         thumb_filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                                                             @Override
                                                             //when getting thumbnail download url is success.
@@ -263,7 +274,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                                                                 if (thumb_task.isSuccessful()) {
 
-                                                                    //put cropped image url and thumbnail image url
+                                                                    //--- 5. put cropped image url and thumbnail image url
                                                                     Map update_hashMap = new HashMap();
                                                                     update_hashMap.put("image", download_url);
                                                                     update_hashMap.put("thumb_image", thumb_download_url);

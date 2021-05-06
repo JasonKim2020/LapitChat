@@ -21,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.util.HashMap;
 
@@ -99,23 +100,26 @@ public class RegisterActivity extends AppCompatActivity {
                             //get user id
                             String uid = current_user.getUid();
 
+                            String deviceToken = FirebaseInstanceId.getInstance().getToken();
+
 //                            https://www.youtube.com/watch?v=6AKdGvGE_BY&list=PLGCjwl1RrtcQ3o2jmZtwu2wXEA4OIIq53&index=9
                             //set database reference into DatabaseReference object.
                             // database structure: Root -> Users -> user id.
-                            mDatabase= FirebaseDatabase.getInstance().getReference().child("Users").child(uid);
+                            mDatabase = FirebaseDatabase.getInstance().getReference().child("Users").child(uid);
 
                             //Create user hash map
                             HashMap<String, String> userMap = new HashMap<>();
                             userMap.put("name", display_name);
                             userMap.put("status", "Hi there I'm using Lapit Chat App.");
-                            userMap.put("image","default");
-                            userMap.put("thumb_image","default");
+                            userMap.put("image", "default");
+                            userMap.put("thumb_image", "default");
+                            userMap.put("device_token", deviceToken);
 
                             //Save user data in DatabaseReference.
                             mDatabase.setValue(userMap).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
-                                    if(task.isSuccessful()){
+                                    if (task.isSuccessful()) {
                                         //Close Progress dialog
                                         mRegProgress.dismiss();
 
