@@ -1,0 +1,39 @@
+mFriendReqDatabase.child(mCurrent_user.getUid()).child(user_id).child("request_type")
+                            .setValue("sent")
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+
+                                    if (task.isSuccessful()) {
+                                        //set request type as received in this guy friend request list
+                                        mFriendReqDatabase.child(user_id).child(mCurrent_user.getUid()).child("request_type")
+                                                .setValue("received")
+                                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                    @Override
+                                                    public void onSuccess(Void aVoid) {
+
+                                                        //set notification record.
+                                                        HashMap<String, String> notificationData = new HashMap<>();
+                                                        notificationData.put("from", mCurrent_user.getUid());
+                                                        notificationData.put("type", "request");
+
+                                                        mNotificationDatabase.child(user_id).push().setValue(notificationData)
+                                                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                                    @Override
+                                                                    public void onSuccess(Void aVoid) {
+                                                                        mCurrent_state = "req_sent";
+                                                                        mProfileSendReqBtn.setText("Cancel Friend Request");
+
+                                                                        mDeclineBtn.setVisibility(View.INVISIBLE);
+                                                                        mDeclineBtn.setEnabled(false);
+
+                                                                    }
+                                                                });
+                                                    }
+                                                });
+                                    } else {
+                                        Toast.makeText(ProfileActivity.this, "Failed Sending Request.", Toast.LENGTH_SHORT).show();
+                                    }
+                                    mProfileSendReqBtn.setEnabled(true);
+                                }
+                            });
