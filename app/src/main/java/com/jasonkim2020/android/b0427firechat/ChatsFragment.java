@@ -28,11 +28,15 @@ import com.squareup.picasso.Picasso;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
+// Show chat rooms
 public class ChatsFragment extends Fragment {
 
+    //Conversation(chat) List
     private RecyclerView mConvList;
 
+    //Conversation list
     private DatabaseReference mConvDatabase;
+    //Message List
     private DatabaseReference mMessageDatabase;
     private DatabaseReference mUserDatabase;
 
@@ -40,6 +44,7 @@ public class ChatsFragment extends Fragment {
 
     private String mCurrent_user_id;
 
+    // to inflate main view
     private View mMainView;
 
     private FirebaseRecyclerOptions<Conv> options;
@@ -49,16 +54,18 @@ public class ChatsFragment extends Fragment {
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        // to inflate main view
         mMainView = inflater.inflate(R.layout.fragment_chats, container, false);
 
         mConvList = (RecyclerView) mMainView.findViewById(R.id.conv_list);
         mAuth = FirebaseAuth.getInstance();
 
         mCurrent_user_id = mAuth.getCurrentUser().getUid();
+        //Conversation list
         mConvDatabase = FirebaseDatabase.getInstance().getReference().child("Chat").child(mCurrent_user_id);
 
         mConvDatabase.keepSynced(true);
@@ -70,6 +77,7 @@ public class ChatsFragment extends Fragment {
         linearLayoutManager.setReverseLayout(true);
         linearLayoutManager.setStackFromEnd(true);
 
+        //Recycler View
         mConvList.setHasFixedSize(true);
         mConvList.setLayoutManager(linearLayoutManager);
 
@@ -81,11 +89,15 @@ public class ChatsFragment extends Fragment {
     public void onStart() {
         super.onStart();
 
+        //retrieving chat room order by making time.
         Query conversationQuery = mConvDatabase.orderByChild("timestamp");
+        //set options having chat room information
         options = new FirebaseRecyclerOptions.Builder<Conv>().setQuery(conversationQuery, Conv.class).build();
         convRecyclerViewAdapter = new FirebaseRecyclerAdapter<Conv, ConvViewHolder>(options) {
             @Override
             protected void onBindViewHolder(@NonNull ConvViewHolder convViewHolder, int position, @NonNull Conv conv) {
+
+                //Display conversations
 
                 final String list_user_id = getRef(position).getKey();
                 Query lastMessageQuery = mMessageDatabase.child(list_user_id).limitToLast(1);
@@ -104,6 +116,7 @@ public class ChatsFragment extends Fragment {
                     }
                 });
 
+                // Retrieving User name, and image.
                 mUserDatabase.child(list_user_id).addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -114,10 +127,12 @@ public class ChatsFragment extends Fragment {
                             String userOnline = dataSnapshot.child("online").getValue().toString();
                             convViewHolder.setUserOnline(userOnline);
                         }
-
+                        //// Setting User name, and image.
                         convViewHolder.setName(userName);
                         convViewHolder.setUserImage(userThumb, getContext());
 
+
+                        // Onclick view hoder -> send to ChatActivity.
                         convViewHolder.mView.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
