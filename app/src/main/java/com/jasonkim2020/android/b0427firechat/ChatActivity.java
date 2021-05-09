@@ -1,6 +1,8 @@
 package com.jasonkim2020.android.b0427firechat;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -20,6 +22,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -29,6 +34,9 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
@@ -65,9 +73,79 @@ public class ChatActivity extends AppCompatActivity {
     private MessageAdapter mAdapter;
 
     private static final int TOTAL_ITEMS_TO_LOAD = 10;
-    private int mCurrentPage = 1;
+    private static final int GALLERY_PICK = 1;
+
+    //Storage Firebase
+    private StorageReference mImageStorage;
+
     private String mChatUserThumb_image;
     private String mCurrentUserThumb_image;
+
+    //New Solution
+    private int mItemPos = 0;
+    private String mLastKey = "";
+    private String mPrevKey = "";
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == GALLERY_PICK && resultCode == RESULT_OK) {
+            Uri imageUri = data.getData();
+            Toast.makeText(this, imageUri.toString(), Toast.LENGTH_SHORT).show();
+            final String current_user_ref = "messages/" + mCurrentUserId + "/" + mChatUser;
+            final String chat_user_ref = "messages/" + mChatUser + "/" + mCurrentUserId;
+
+
+            DatabaseReference user_message_push = mRootRef.child("messages")
+                    .child(mCurrentUserId).child(mChatUser).push();
+
+            final String push_id = user_message_push.getKey();
+
+            //Get storage reference
+            mImageStorage = FirebaseStorage.getInstance().getReference();
+
+            StorageReference filepath = mImageStorage.child("message_images").child(push_id + ".jpg");
+
+            filepath.putFile(imageUri).addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
+                    if (task.isSuccessful()) {
+                        filepath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                            @Override
+                            public void onSuccess(Uri uri) {
+                                String download_url = uri.toString();
+
+                                Map messageMap = new HashMap();
+                                messageMap.put("message", download_url);
+                                messageMap.put("seen", false);
+                                messageMap.put("type", "image");
+                                messageMap.put("time", ServerValue.TIMESTAMP);
+                                messageMap.put("from", mCurrentUserId);
+
+                                Map messageUserMap = new HashMap();
+                                messageUserMap.put(current_user_ref + "/" + push_id, messageMap);
+                                messageUserMap.put(chat_user_ref + "/" + push_id, messageMap);
+
+                                // Clear edit text view
+                                mChatMessageView.setText("");
+
+                                mRootRef.updateChildren(messageUserMap, new DatabaseReference.CompletionListener() {
+                                    @Override
+                                    public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference ref) {
+                                        if (databaseError != null) {
+                                            Toast.makeText(ChatActivity.this, databaseError.getMessage().toString(), Toast.LENGTH_SHORT).show();
+                                            Log.d("CHAT LOG", databaseError.getMessage().toString());
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,14 +211,13 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        // -------  Retrieving Chat user Online and Image
+        // -------  Retrieving Chat user Online status and Image
         mRootRef.child("Users").child(mChatUser).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 String online = dataSnapshot.child("online").getValue().toString();
                 String image = dataSnapshot.child("image").getValue().toString();
                 mChatUserThumb_image = dataSnapshot.child("thumb_image").getValue().toString();
-
 
 
                 if (online.equals("true")) {
@@ -183,7 +260,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        // --------- When user enter the chat room  ------------
+        // --------- Making chat room  ------------
         mRootRef.child("Chat").child(mCurrentUserId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -218,6 +295,7 @@ public class ChatActivity extends AppCompatActivity {
         // ----------  Load Messages ----------------
         loadMessages();
 
+        // ------------ Send Message ----------------------
         mChatSendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -225,21 +303,96 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        //--------  SwipeRefresh Layout
-        mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        //------------ OnClick mChatAddBtn ------------
+        mChatAddBtn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onRefresh() {
-                //Whenever user swipe, current page is increased,
-                // it retrieves more messages.
-                mCurrentPage++;
+            public void onClick(View v) {
+                Intent galleryItent = new Intent();
+                galleryItent.setType("image/*");
+                galleryItent.setAction(Intent.ACTION_GET_CONTENT);
 
-                messagesList.clear();
-
-                loadMessages();
+                startActivityForResult(Intent.createChooser(galleryItent, "SELECT IMAGE"), GALLERY_PICK);
             }
         });
 
+        //--------  SwipeRefresh Layout ------------
+        mRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+
+                mItemPos = 0;
+
+                loadMoreMessages();
+            }
+        });
+
+
     }
+
+    private void loadMoreMessages() {
+        mRootRef.keepSynced(true);
+        DatabaseReference messageRef = mRootRef.child("messages").child(mCurrentUserId).child(mChatUser);
+        Query messageQuery = messageRef.orderByKey().endAt(mLastKey).limitToLast(TOTAL_ITEMS_TO_LOAD);
+
+        messageQuery.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String previousChildName) {
+                //Retrieve data as a type of message
+                Messages message = dataSnapshot.getValue(Messages.class);
+                String messageKey = dataSnapshot.getKey();
+
+                // if this message is from chat user
+                // shows thumb image
+                if (message.getFrom().equals(mChatUser)) {
+                    message.setThumb_image(mChatUserThumb_image);
+                } else {
+                    message.setThumb_image(mCurrentUserThumb_image);
+                }
+
+                //Add message in RecyclerView
+
+                if (!mPrevKey.equals(messageKey)) {
+                    messagesList.add(mItemPos++, message);
+                } else {
+                    mPrevKey = messageKey;
+                }
+
+                if (mItemPos == 1) {
+                    mLastKey = messageKey;
+                }
+
+                mAdapter.notifyDataSetChanged();
+
+                Log.d("TOTALKEYS", "Last Key :" + mLastKey + " | Prev Key : " + mPrevKey + " | Message Key : " + messageKey);
+
+                //Remove refreshing animation.
+                mRefreshLayout.setRefreshing(false);
+
+                mLinearLayout.scrollToPositionWithOffset(10, 0);
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
+
 
     // ---------- load Message --------------------------
     private void loadMessages() {
@@ -249,7 +402,7 @@ public class ChatActivity extends AppCompatActivity {
         // limit the number of messages to retrieve.
         // TOTAL_ITEMS_TO_LOAD is the number of item to be loaded at a time.
         //mCurrentPage is increased, when user swipe and refresh.
-        Query messageQuery = messageRef.limitToLast(mCurrentPage * TOTAL_ITEMS_TO_LOAD);
+        Query messageQuery = messageRef.limitToLast(TOTAL_ITEMS_TO_LOAD);
 
         messageQuery.addChildEventListener(new ChildEventListener() {
             @Override
@@ -257,11 +410,19 @@ public class ChatActivity extends AppCompatActivity {
                 //Retrieve data as a type of message
                 Messages message = dataSnapshot.getValue(Messages.class);
 
+                mItemPos++;
+                if (mItemPos == 1) {
+                    String messageKey = dataSnapshot.getKey();
+                    mLastKey = messageKey;
+                    mPrevKey = messageKey;
+                }
+
+
                 // if this message is from chat user
                 // shows thumb image
-                if(message.getFrom().equals(mChatUser)){
+                if (message.getFrom().equals(mChatUser)) {
                     message.setThumb_image(mChatUserThumb_image);
-                }else{
+                } else {
                     message.setThumb_image(mCurrentUserThumb_image);
                 }
 

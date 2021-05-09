@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/message_single_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -43,4 +44,14 @@
         android:layout_toRightOf="@id/name_text_layout"
         android:text="00:00"
         android:textSize="13dp" />
+
+    <ImageView
+        android:id="@+id/message_image_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/message_text_layout"
+        android:layout_alignStart="@id/message_text_layout"
+        android:layout_marginStart="0dp"
+        android:layout_toEndOf="@id/message_profile_layout"
+        android:scaleType="centerCrop" />
 </RelativeLayout>

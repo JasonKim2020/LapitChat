@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -39,12 +40,16 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         public TextView messageText;
         public CircleImageView profileImage;
         public Context context;
+        public TextView displayName;
+        public ImageView messageImage;
 
         public MessageViewHolder(View itemView) {
             super(itemView);
             context = itemView.getContext();
             messageText = (TextView) itemView.findViewById(R.id.message_text_layout);
             profileImage = (CircleImageView) itemView.findViewById(R.id.message_profile_layout);
+            displayName = (TextView) itemView.findViewById(R.id.name_text_layout);
+            messageImage = (ImageView) itemView.findViewById(R.id.message_image_layout);
         }
     }
 
@@ -53,17 +58,29 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         String current_user_id = mAuth.getCurrentUser().getUid();
         Messages c = mMessageList.get(i);
         String from_user = c.getFrom();
-        if(from_user.equals(current_user_id)){
+        String message_type = c.getType();
+        if (from_user.equals(current_user_id)) {
 //            viewHolder.messageText.setBackgroundColor(Color.WHITE);
 //            viewHolder.messageText.setTextColor(Color.BLACK);
 
-        }else{
+        } else {
 //            viewHolder.messageText.setBackgroundResource(R.drawable.message_text_background);
 //            viewHolder.messageText.setTextColor(Color.WHITE);
 
 
         }
-        viewHolder.messageText.setText(c.getMessage());
+
+        //if it is text message or not
+        if(message_type.equals("text")){
+            viewHolder.messageText.setText(c.getMessage());
+            viewHolder.messageImage.setVisibility(View.INVISIBLE);
+        }else{
+            viewHolder.messageText.setVisibility(View.INVISIBLE);
+            Picasso.with(viewHolder.profileImage.getContext()).load(c.getMessage())
+                    .placeholder(R.drawable.default_avatar).into(viewHolder.messageImage);
+        }
+
+        // ------------   Sender profile image ------------
         String thumb_image = c.getThumb_image();
 
         //because there can be a user that have not uploaded any image yet.
@@ -87,7 +104,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
                     Picasso.with(viewHolder.context).load(thumb_image).placeholder(R.drawable.default_avatar).into(viewHolder.profileImage);
                 }
             });
-        }else{
+        } else {
             viewHolder.profileImage.setVisibility(View.INVISIBLE);
         }
     }
